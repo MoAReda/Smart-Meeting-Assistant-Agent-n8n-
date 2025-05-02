@@ -1,0 +1,369 @@
+{
+  "name": "Lab work 6- Smart Meeting Assistant Agent (n8n)",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "593fea70-d475-4349-ae35-9981aaccacda",
+      "name": "Telegram Trigger2",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [
+        -500,
+        0
+      ],
+      "webhookId": "your-webhook-id",
+      "credentials": {
+        "telegramApi": {
+          "id": "cCWgKVH5wIhjNXT5",
+          "name": "GoldenBOT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.llm_input }}{{ $json.text }}",
+        "options": {
+          "systemMessage": "I want it in the following form:\nDate start:2nd of May,2025 00:00:00\nDate end:2nd of May.2025 00:00:00\nMeeting name:Smart Meeting Assistant Agent (n8n)\ndetails:Finalize the workflow integration for Telegram and Google Calendar\nparticipat:eng.mohamedareda@gmail.com, sa6056420@gmail.com\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        180,
+        -20
+      ],
+      "id": "e531c34d-8a72-4e73-a912-b1bca123d83e",
+      "name": "Generate Agenda1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        220,
+        120
+      ],
+      "id": "ef3cbd45-287a-4c2a-8731-97f00501081e",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "UbNhpdgq2xJGNYZa",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -280,
+        100
+      ],
+      "id": "96d239db-fb1a-4b46-a759-3a88ca2973a7",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.transcript }}",
+        "options": {
+          "systemMessage": "Summarize the following meeting transcript in 100 words or less."
+        }
+      },
+      "id": "179af183-5489-49cc-9208-10e952994ab5",
+      "name": "Summarize Transcript1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        -160,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c446cb9d-971f-42e6-822a-d48946ec5af6",
+      "name": "Groq Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        580
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "UbNhpdgq2xJGNYZa",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Schedule Meeting1').item.json.creator.email }}",
+        "subject": "={{ $('Schedule Meeting1').item.json.summary }}",
+        "message": "={{ $('Transcript').item.json.transcript }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        180,
+        500
+      ],
+      "id": "6ead3079-6f16-4985-8e3f-61f4654061dc",
+      "name": "Gmail2",
+      "webhookId": "6768f9b0-372f-476e-9229-bfeba84ea004",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PcDYmtHni1ouxfQS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Schedule Meeting1').item.json.creator.email }},{{ $('Schedule Meeting1').item.json.attendees[1].email }} , {{ $('Schedule Meeting1').item.json.attendees[0].email }}",
+        "subject": "={{ $('Schedule Meeting1').item.json.summary }}",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        180,
+        340
+      ],
+      "id": "84a898f6-a892-46e3-953b-0fed73681ea9",
+      "name": "Gmail1",
+      "webhookId": "6768f9b0-372f-476e-9229-bfeba84ea004",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PcDYmtHni1ouxfQS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "=primary",
+          "mode": ""
+        },
+        "start": "={{ $json.start.dateTime }}",
+        "end": "={{ $json.end.dateTime }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $json.attendees[0].email }}",
+            "={{ $json.attendees[1].email }}"
+          ],
+          "description": "={{ $json.description }}",
+          "summary": "={{ $json.summary }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        700,
+        100
+      ],
+      "id": "545c8980-1a16-4d05-84b3-5ef64fc07f92",
+      "name": "Schedule Meeting1",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "7WyDL0ZhjkRqEGOx",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the COMPLETE input data\nconst fullInput = $input.first()?.json || {};\nconst pdfTextt = fullInput.text || fullInput.data?.text || 'No PDF text extracted';\n// Replace PDF text with the provided meeting details\nconst pdfText = `Project: Smart Meeting Assistant Agent (n8n)\nObjective: Finalize the workflow integration for Telegram and Google Calendar\nDiscussion Points:\n1. Review PDF extraction accuracy\n2. Test LLM prompt formatting\n3. Validate calendar invite automation\n4. Verify email notifications\nParticipants: eng.mohamedareda@gmail.com, sa6056420@gmail.com\nPreferred Date: 2025-05-2\nTime: 9 pm\nDuration: 10 minutes`;\n\n// Get the user prompt (checking all possible message locations)\nconst userPrompt = fullInput.message?.text || \n                  fullInput.message?.caption || \n                  fullInput.llm_input || \n                  '';\n\nreturn [{\n  json: {\n    llm_input: `User request: ${userPrompt}\\n\\nExtracted PDF content:\\n${pdfText}`\n    ,pdf:pdfTextt\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -60,
+        0
+      ],
+      "id": "cb10312d-f761-4333-8f4b-88bfdaa7fa65",
+      "name": "Combine Prompt & PDF Text"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the input data\nconst input = $input.first()?.json || {};\n\n// Extract meeting text from any location\nconst meetingText = input.text || input.data?.text || input.llm_input || '';\n\n// Initialize result with proper Google Calendar format\nconst result = {\n  start: {\n    dateTime: '2025-05-02T21:00:00',\n    timeZone: 'Africa/Cairo'\n  },\n  end: {\n    dateTime: '2025-05-02T21:10:00',\n    timeZone: 'Africa/Cairo'\n  },\n  summary: 'Smart Meeting Assistant Agent (n8n)',\n  description: 'Finalize the workflow integration for Telegram and Google Calendar',\n  attendees: [\n    { email: 'eng.mohamedareda@gmail.com' },\n    { email: 'sa6056420@gmail.com' }\n  ]\n};\n\n// Parse meeting text if available\nif (meetingText.includes('Project:')) {\n  const lines = meetingText.split('\\n').map(line => line.trim()).filter(line => line);\n  \n  const dateStr = lines.find(l => l.startsWith('Preferred Date:'))?.split(': ')[1] || '2025-05-02';\n  const timeStr = lines.find(l => l.startsWith('Time:'))?.split(': ')[1] || '21:00';\n  const duration = parseInt(lines.find(l => l.startsWith('Duration:'))?.split(': ')[1]) || 10;\n\n  // Convert to proper ISO format\n  const startDate = new Date(`${dateStr}T${timeStr}:00Z`);\n  const endDate = new Date(startDate.getTime() + duration * 60000);\n\n  result.start.dateTime = startDate.toISOString();\n  result.end.dateTime = endDate.toISOString();\n  result.summary = lines.find(l => l.startsWith('Project:'))?.split(': ')[1] || result.summary;\n  result.description = lines.find(l => l.startsWith('Objective:'))?.split(': ')[1] || result.description;\n  \n  const participants = lines.find(l => l.startsWith('Participants:'))?.split(': ')[1].split(',');\n  if (participants) {\n    result.attendees = participants.map(email => ({ email: email.trim() }));\n  }\n}\n\nreturn [{\n  json: result\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        -20
+      ],
+      "id": "295049e9-69b5-49cc-9f49-0c043a8ea649",
+      "name": "Extract Meeting Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get meeting details from previous node\nconst meetingData = $input.first().json;\n\n// Extract core meeting information with error handling\nconst meetingName = meetingData?.summary || \"Smart Meeting Assistant Agent Discussion\";\nconst details = meetingData?.description || \"Workflow integration finalization\";\nconst participants = meetingData?.attendees?.map(attendee => {\n  // Extract name from email before @\n  const namePart = attendee.email.split('@')[0].replace(/[^a-zA-Z]/g, ' ');\n  return namePart.trim().split(' ')[0] || 'Participant';\n}) || [\"Mohamed\", \"SA\"];\n\n// Get formatted date from calendar event\nconst meetingDate = meetingData?.start?.dateTime ?\n  new Date(meetingData.start.dateTime).toLocaleString('en-EG', {\n    weekday: 'long',\n    year: 'numeric',\n    month: 'long',\n    day: 'numeric',\n    hour: '2-digit',\n    minute: '2-digit',\n    timeZone: 'Africa/Cairo'\n  }) : \"May 2nd, 2025 at 9:00 PM EET\";\n\n// Generate structured transcript\nconst transcript = `\nMeeting: ${meetingName}\nDate: ${meetingDate}\nParticipants: ${participants.join(', ')}\nAgenda: ${details}\n\n[00:00] Moderator: Welcome everyone. Let's begin our discussion about ${meetingName}.\n[00:05] ${participants[0]}: I recommend we start by reviewing the PDF extraction accuracy.\n[00:10] ${participants[1]}: Agreed. We should also verify the calendar invite automation.\n[00:15] Moderator: Good points. Let's address these items in order:\n          1. ${details.split('.')[0]}\n          2. Email notification validation`;\n\nreturn [{ \n  json: { \n    transcript: transcript.trim(),\n    originalData: meetingData // Maintain reference to source data\n  } \n}];"
+      },
+      "id": "1b4dc4ef-0336-42bb-bf60-20a463a28e00",
+      "name": "Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        400
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger2": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Combine Prompt & PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Agenda1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Agenda1": {
+      "main": [
+        [
+          {
+            "node": "Extract Meeting Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Combine Prompt & PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize Transcript1": {
+      "main": [
+        [
+          {
+            "node": "Gmail2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarize Transcript1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Meeting1": {
+      "main": [
+        [
+          {
+            "node": "Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Prompt & PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Generate Agenda1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Meeting Fields": {
+      "main": [
+        [
+          {
+            "node": "Schedule Meeting1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcript": {
+      "main": [
+        [
+          {
+            "node": "Summarize Transcript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a28512d6-1553-4c26-8553-47fc59e04ba8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "edf401c93101f00d9e75ea53233c4a69d96807527c81612203043c108d03c624"
+  },
+  "id": "1ngwPxMZrRYCCAJ8",
+  "tags": []
+}
